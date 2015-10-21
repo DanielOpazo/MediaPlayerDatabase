@@ -9,7 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import com.sun.istack.internal.logging.Logger;
+import java.util.logging.*;
 
 /**
  * 
@@ -24,7 +24,7 @@ public class FileIO {
 	private File file;
 	private BufferedReader reader;
 	private BufferedWriter writer;
-	private static final Logger log = Logger.getLogger(FileIO.class);
+	private static final Logger log = Logger.getLogger(FileIO.class.getName());
 	
 	/**
 	 * 
@@ -33,7 +33,6 @@ public class FileIO {
 	 */
 	public FileIO(String fileName)
 	{
-		super();
 		file = new File(fileName);
 	}
 	
@@ -77,6 +76,10 @@ public class FileIO {
 	public ArrayList<String> getLines()
 	{
 		getBufferedReader();
+		if (reader == null) {
+			getLog().warning("File could not be found, so no lines can be read from the file");
+			return null;
+		}
 		ArrayList<String> lineArray = new ArrayList<String>();
 		String line;
 		try {
