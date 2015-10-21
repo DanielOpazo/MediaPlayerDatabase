@@ -57,10 +57,9 @@ public class DataFromFile {
 			return valuesHash;
 		}
 
-	public void setValuesHash(Hashtable<String, String> valuesHash) {
-			this.valuesHash = valuesHash;
-		}
-	
+	public void setValuesHash(Hashtable<String, String> hash) {
+		this.valuesHash = hash;
+	}
 	
 	public static void main(String[] args) {
 		DataFromFile dff = new DataFromFile("C:\\Users\\Daniel\\workspace\\DatabaseProgram\\metadata.md");
