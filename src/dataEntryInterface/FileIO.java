@@ -95,10 +95,10 @@ public class FileIO {
 	}
 	
 	
-	private void getBufferedWriter()
+	private void getBufferedWriter(boolean append)
 	{
 		try {
-			writer = new BufferedWriter(new FileWriter(file));
+			writer = new BufferedWriter(new FileWriter(file, append));
 		} catch (IOException e) {
 			getLog().warning("Error creating BufferedWriter "  +e);
 		}
@@ -117,9 +117,9 @@ public class FileIO {
 	 * 
 	 * @param lines An ArrayList where each element is printed on its own line
 	 */
-	public void write(ArrayList<String> lines)
+	public void write(ArrayList<String> lines, boolean append)
 	{
-		getBufferedWriter();
+		getBufferedWriter(append);
 		try {
 			for (String line: lines)
 			{
@@ -131,6 +131,6 @@ public class FileIO {
 			getLog().warning("Error writing to file" + e);
 		}
 		closeBufferedWriter();
-		
 	}
+	
 }
