@@ -1,30 +1,65 @@
 package dataEntryInterface;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Hashtable;
 import java.util.logging.Logger;
+import java.util.Date;
 
 /**
  * 
  * @author Daniel
- * Class that reads the values from the hash created from the data in the metadata file.
- *
+ * Class that reads the values from the hash created by fileData from the data in the metadata file.
+ * Performs input validation on values read from file.
+ * Stores the values in a SongFileInfo object, which is then passed to CoreDataAccess
  */
 public class DataInterpreter {
 	private static final Logger log = Logger.getLogger(DataInterpreter.class.getName());
 	private DataFromFile fileData;
+	private SongFileInfo songFileInfo;
 	private final String titleKey = "title";
 	private final int maxTitleLength = 30;
 	private final String artistKey = "artist";
 	private final String albumKey = "album";
 	private final String trackNumberKey = "track";
+	private final String dateKey = "date";
 
+	/**
+	 * Immediately tries to get a FileData for the given fileName
+	 * @param fileName containing the song data
+	 */
 	public DataInterpreter(String fileName) {
 		setFileData(new DataFromFile(fileName));
+		songFileInfo = new SongFileInfo();
+	}
+	
+	public void getValuesFromFile() {
+		songFileInfo.setTitle(readTitle());
+		songFileInfo.setArtist(readArtist());
+		songFileInfo.setAlbum(readAlbum());
+		songFileInfo.setTrackNumber(readTrack());
+		songFileInfo.setReleaseDate(readDate());
+	}
+	
+	public Date readDate() {
+		String strDate = getValueOrNull(dateKey);
+		Date releaseDate = null;
+		if (strDate == null) {
+			return releaseDate;
+		}
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		try {
+			releaseDate = dateFormat.parse(strDate);
+		} catch (ParseException e) {
+			getLog().warning("Could not parse date: " + strDate + "\n" + e.getMessage());
+		}
+		return releaseDate;
+		
 	}
 	
 	/**
 	 * 
-	 * @return the value of the title field. Null if no value, or value is ""
+	 * @return the value of the title field. Null if no value, or if value is ""
 	 */
 	public String readTitle() {
 		String title = getValueOrNull(titleKey);
@@ -37,14 +72,45 @@ public class DataInterpreter {
 	
 	/**
 	 * 
-	 * @return the value of the title field. 
+	 * @return the value of the Artist field. returns "Unknown" if empty or blank 
 	 */
 	public String readArtist() {
-		String artist = getValueOrNull(artistKey);
-		if (artist != null) {
-			return artist;
+		return getValueOrUnknown(artistKey);
+	}
+	
+	/**
+	 * 
+	 * @return the value of the Album field. returns "Unknown" if empty or blank
+	 */
+	public String readAlbum() {
+		return getValueOrUnknown(albumKey);
+	}
+	
+	public int readTrack() {
+		int track = 0;
+		try {
+			track = Integer.parseInt(getValueOrNull(trackNumberKey));
+		}catch (NumberFormatException e) {
+			getLog().warning("Error converting track number to Integer\n" + e.getMessage());
+			track = 0;
 		}
-		return "";
+		if (track < 1 ) {
+			getLog().warning("Track must be greater than 1");
+			track = 0;
+		}
+		return track;
+	}
+	
+	/**
+	 * 
+	 * @param key The field to be fetched from the Hash
+	 * @return the value, or "Unknown" if the value is null
+	 */
+	private String getValueOrUnknown(String key) {
+		String value = getValueOrNull(key);
+		if (value == null) 
+			value = "Unknown";
+		return value;
 	}
 	
 	/**
@@ -68,6 +134,14 @@ public class DataInterpreter {
 
 	public void setFileData(DataFromFile fileData) {
 		this.fileData = fileData;
+	}
+	
+	public SongFileInfo getSongFileInfo() {
+		return songFileInfo;
+	}
+
+	public void setSongFileInfo(SongFileInfo songFileInfo) {
+		this.songFileInfo = songFileInfo;
 	}
 	
 	private Logger getLog() {

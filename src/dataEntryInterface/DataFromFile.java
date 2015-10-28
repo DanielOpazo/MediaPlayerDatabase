@@ -11,7 +11,9 @@ import java.util.regex.Pattern;
  * 
  * @author Daniel
  * Class that reads the metadata sent in a file from the Data Entry Program
- *
+ * For each line that is the proper format, an entry is created in the HashTable
+ * Proper format for a line is:
+ * <key><value> 
  */
 public class DataFromFile {
 
