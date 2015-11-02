@@ -2,9 +2,10 @@ package dataEntryInterface;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Hashtable;
 import java.util.logging.Logger;
 import java.util.Date;
+
+import database.CoreDataAccess;
 
 /**
  * 
@@ -16,13 +17,15 @@ import java.util.Date;
 public class DataInterpreter {
 	private static final Logger log = Logger.getLogger(DataInterpreter.class.getName());
 	private DataFromFile fileData;
-	private SongFileInfo songFileInfo;
-	private final String titleKey = "title";
+	private FileInfo fileInfo;
+	private final String videoTitleKey = "vtitle";
+	private final String songTitleKey = "stitle";
 	private final int maxTitleLength = 30;
 	private final String artistKey = "artist";
 	private final String albumKey = "album";
 	private final String trackNumberKey = "track";
 	private final String dateKey = "date";
+	private final String categoryKey = "category";
 
 	/**
 	 * Immediately tries to get a FileData for the given fileName
@@ -30,15 +33,28 @@ public class DataInterpreter {
 	 */
 	public DataInterpreter(String fileName) {
 		setFileData(new DataFromFile(fileName));
-		songFileInfo = new SongFileInfo();
+		fileInfo = null;
 	}
 	
+	/**
+	 * Creates a SongFileInfo instance if the metadata file is for a song,
+	 * or create a VideoFileInfo instance if the file is for a video.
+	 */
 	public void getValuesFromFile() {
-		songFileInfo.setTitle(readTitle());
-		songFileInfo.setArtist(readArtist());
-		songFileInfo.setAlbum(readAlbum());
-		songFileInfo.setTrackNumber(readTrack());
-		songFileInfo.setReleaseDate(readDate());
+		if (isSong()) {
+			SongFileInfo songFileInfo = new SongFileInfo();
+			songFileInfo.setTitle(readTitle(songTitleKey));
+			songFileInfo.setArtist(readArtist());
+			songFileInfo.setAlbum(readAlbum());
+			songFileInfo.setTrackNumber(readTrack());
+			songFileInfo.setDate(readDate());
+			fileInfo = songFileInfo;
+		}else if (isVideo()) {
+		    VideoFileInfo videoFileInfo = new VideoFileInfo(); 
+			videoFileInfo.setTitle(readTitle(videoTitleKey));
+			videoFileInfo.setDate(readDate());
+			videoFileInfo.setCategory(readCategory());
+		}
 	}
 	
 	public Date readDate() {
@@ -57,11 +73,24 @@ public class DataInterpreter {
 		
 	}
 	
+	
+	public String readCategory() {
+		return getValueOrUnknown(categoryKey);
+	}
+	
+	private boolean isSong() {
+		return getFileData().getValuesHash().get(songTitleKey) == null;
+	}
+	
+	private boolean isVideo() {
+		return getFileData().getValuesHash().get(videoTitleKey) == null;
+	}
+	
 	/**
 	 * 
 	 * @return the value of the title field. Null if no value, or if value is ""
 	 */
-	public String readTitle() {
+	public String readTitle(String titleKey) {
 		String title = getValueOrNull(titleKey);
 		if (title == null || title.length() > maxTitleLength) {
 			getLog().warning("Invalid title");
@@ -136,19 +165,22 @@ public class DataInterpreter {
 		this.fileData = fileData;
 	}
 	
-	public SongFileInfo getSongFileInfo() {
-		return songFileInfo;
+	public FileInfo getFileInfo() {
+		return fileInfo;
 	}
 
-	public void setSongFileInfo(SongFileInfo songFileInfo) {
-		this.songFileInfo = songFileInfo;
+	public void setInfo(FileInfo fileInfo) {
+		this.fileInfo = fileInfo;
 	}
 	
 	private Logger getLog() {
 		return log;
 	}
 	public static void main(String[] args) {
-
+		CoreDataAccess cda = new CoreDataAccess();
+		DataInterpreter di = new DataInterpreter("metadata.md");
+		di.getValuesFromFile();
+		cda.insertSong((SongFileInfo) di.getFileInfo());
 	}
 
 }

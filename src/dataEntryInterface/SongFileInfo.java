@@ -10,25 +10,22 @@ import java.util.Date;
  * The data in this class should have been input validated by DataInterpreter.
  * 
  */
-public class SongFileInfo {
-	private String title, artist, album;
+public class SongFileInfo extends FileInfo{
+	private String artist, album;
 	private int track;
-	private Date releaseDate;
 
 	public SongFileInfo(String title, String artist, String album, int trackNumber, Date releaseDate) {
-		this.title = title;
+		super(title, releaseDate);
 		this.artist = artist;
 		this.album = album;
 		this.track = trackNumber;
-		this.releaseDate = releaseDate;
 	}
 	
 	public SongFileInfo() {
-		this.title = null;
+		super();
 		this.artist = null;
 		this.album = null;
 		this.track = 0;
-		this.releaseDate = null;
 	}
 	
 	/**
@@ -39,14 +36,6 @@ public class SongFileInfo {
 		return (title != null);
 	}
 	
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
 	public String getArtist() {
 		return artist;
 	}
@@ -70,14 +59,5 @@ public class SongFileInfo {
 	public void setTrackNumber(int trackNumber) {
 		this.track = trackNumber;
 	}
-	
-	public Date getReleaseDate() {
-		return releaseDate;
-	}
-
-	public void setReleaseDate(Date releaseDate) {
-		this.releaseDate = releaseDate;
-	}
-	
 	
 }

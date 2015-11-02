@@ -18,11 +18,13 @@ public class DataInterpreterTest {
 
 	DataInterpreter di;
 	Hashtable<String, String> valuesHash;
-	private final String titleKey = "title";
+	private final String songTitleKey = "stitle";
+	private final String videoTitleKey = "vtitle";
 	private final String artistKey = "artist";
 	private final String albumKey = "album";
 	private final String trackKey = "track";
 	private final String dateKey = "date";
+	private final String categoryKey = "category";
 	
 	@Before
 	public void setUp() throws Exception {
@@ -41,25 +43,25 @@ public class DataInterpreterTest {
 	 */
 	@Test
 	public void readTitleEmptyTest() {
-		di.getFileData().getValuesHash().put(titleKey, "");
-		assertTrue(di.readTitle() == null);
+		di.getFileData().getValuesHash().put(songTitleKey, "");
+		assertTrue(di.readTitle(songTitleKey) == null);
 	}
 	
 	@Test
 	public void readTitleMissingTest() {
-		assertTrue(di.readTitle() == null);
+		assertTrue(di.readTitle(videoTitleKey) == null);
 	}
 	
 	@Test
 	public void readTitleTooLongTest() {
-		di.getFileData().getValuesHash().put(titleKey, "Title of a song that is too long");
-		assertTrue(di.readTitle() == null);
+		di.getFileData().getValuesHash().put(songTitleKey, "Title of a song that is too long");
+		assertTrue(di.readTitle(songTitleKey) == null);
 	}
 	
 	@Test
 	public void readTitleSuccessTest() {
-		di.getFileData().getValuesHash().put(titleKey, "Stairway to Heaven");
-		assertTrue(di.readTitle().equals("Stairway to Heaven"));
+		di.getFileData().getValuesHash().put(songTitleKey, "Stairway to Heaven");
+		assertTrue(di.readTitle(songTitleKey).equals("Stairway to Heaven"));
 	}
 	
 	/*----------------------------------------------------------------------------------
@@ -172,5 +174,25 @@ public class DataInterpreterTest {
 			System.out.println("This shouldn't happen since the date value was manually added");
 		}
 		assertTrue(DateTimeComparator.getDateOnlyInstance().compare(releaseDate, di.readDate()) == 0);
+	}
+	
+	/*----------------------------------------------------------------------------------
+	 * Category tests
+	 */
+	@Test
+	public void readEmptyCategoryTest() {
+		di.getFileData().getValuesHash().put(categoryKey, "");
+		assertTrue(di.readCategory().equalsIgnoreCase("Unknown"));
+	}
+	
+	@Test
+	public void readMissingCategoryTest() {
+		assertTrue(di.readCategory().equals("Unknown"));
+	}
+	
+	@Test
+	public void readSuccessCategoryTest() {
+		di.getFileData().getValuesHash().put(categoryKey, "Horror");
+		assertTrue(di.readCategory().equalsIgnoreCase("Horror"));
 	}
 }
