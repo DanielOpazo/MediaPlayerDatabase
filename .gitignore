@@ -1,2 +1,4 @@
 /bin
 *.log
+.jar
+.zip

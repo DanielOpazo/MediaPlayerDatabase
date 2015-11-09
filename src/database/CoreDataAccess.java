@@ -232,28 +232,21 @@ public class CoreDataAccess {
 	
 	public static void main(String[] args) {
 		CoreDataAccess cda = new CoreDataAccess();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		java.util.Date releaseDate = null;
 		try {
-			Connection conn = cda.getConnection();
-			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-			java.util.Date releaseDate = null;
-			try {
-				releaseDate = format.parse("2005-01-01");
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
-			//SongFileInfo song = new SongFileInfo("A Day In The Life", "The Beatles", "The White Album", 1, releaseDate);
-			//SongFileInfo song = new SongFileInfo("Let It Be", "The Beatles", "Let It Be", 6, releaseDate);
-			//SongFileInfo song = new SongFileInfo("Stairway to Heaven", "Led Zeppelin", "Led Zeppelin IV", 4, releaseDate);
-			//int primaryKey = cda.getArtistPrimaryKey(song);
-			//cda.insertSong(song);
-			VideoFileInfo vfi = new VideoFileInfo("Batman Begins", "drama", releaseDate);
-			cda.insertVideo(vfi);
-			//System.out.println(primaryKey);
-			
-			conn.close();
-		} catch (SQLException e) {
+			releaseDate = format.parse("2005-01-01");
+		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+		//SongFileInfo song = new SongFileInfo("A Day In The Life", "The Beatles", "The White Album", 1, releaseDate);
+		//SongFileInfo song = new SongFileInfo("Let It Be", "The Beatles", "Let It Be", 6, releaseDate);
+		SongFileInfo song = new SongFileInfo("Stairway to Heaven", "Led Zeppelin", "Led Zeppelin IV", 4, releaseDate);
+		int primaryKey = cda.getArtistPrimaryKey(song);
+		//cda.insertSong(song);
+		//VideoFileInfo vfi = new VideoFileInfo("Batman Begins", "drama", releaseDate);
+		//cda.insertVideo(vfi);
+		System.out.println(primaryKey);
 	}
 
 }
