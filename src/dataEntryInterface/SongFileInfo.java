@@ -33,7 +33,7 @@ public class SongFileInfo extends FileInfo{
 	 * @return
 	 */
 	public boolean isValidEntry() {
-		return (title != null);
+		return (getTitle() != null);
 	}
 	
 	public String getArtist() {

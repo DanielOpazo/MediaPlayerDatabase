@@ -4,8 +4,8 @@ import java.util.Date;
 
 public abstract class FileInfo {
 
-	protected String title;
-	protected Date date;
+	private String title;
+	private Date date;
 
 	public FileInfo(String title, Date date) {
 		this.title = title;
