@@ -24,10 +24,10 @@ public class MediaQueriesThread extends Thread{
 	private final int defaultBufSize = 256;
 	UDPHelper udpHelper;
 	public enum queryCode {
-		SONG_QUERY,ALBUM_QUERY,ARTIST_QUERY,VIDEO_QUERY, UNKNOWN_QUERY;
+		SONGS_FOR_ALBUM_QUERY, SONGS_QUERY, ALBUMS_FOR_ARTIST_QUERY, ALBUMS_QUERY, ARTISTS_QUERY, VIDEOS_QUERY, VIDEOS_FOR_CATEGORY_QUERY, CATEGORIES_QUERY, UNKNOWN_QUERY;
 	}
 	private Hashtable<Integer, queryCode> codeLookup;
-	private final String QUERY_REGEX = "\\[(\\d)\\]\\[(\\d*)\\]";  
+	private final String QUERY_REGEX = "\\[(\\d)\\]\\[(\\w*)\\]";  
 	
 	public MediaQueriesThread(InetAddress appAddress, int appPort, int piPort) {
 		this.piPort = piPort;
@@ -42,18 +42,24 @@ public class MediaQueriesThread extends Thread{
 	}
 	
 	private void initializeCodeLookupTable(Hashtable<Integer, queryCode> codeLookupTable) {
-		codeLookup.put(1, queryCode.SONG_QUERY);
-		codeLookup.put(2, queryCode.ALBUM_QUERY);
-		codeLookup.put(3, queryCode.ARTIST_QUERY);
-		codeLookup.put(4, queryCode.VIDEO_QUERY);
+		codeLookup.put(1, queryCode.SONGS_FOR_ALBUM_QUERY);
+		codeLookup.put(2, queryCode.SONGS_QUERY);
+		codeLookup.put(3, queryCode.ALBUMS_FOR_ARTIST_QUERY);
+		codeLookup.put(4, queryCode.ALBUMS_QUERY);
+		codeLookup.put(5, queryCode.ARTISTS_QUERY);
+		codeLookup.put(6, queryCode.VIDEOS_QUERY);
+		codeLookup.put(7, queryCode.VIDEOS_FOR_CATEGORY_QUERY);
+		codeLookup.put(8, queryCode.CATEGORIES_QUERY);
 	}
 
 	/**
 	 * Enter receiving mode. Wait for a query from the app, and extract the query from the message
 	 * Send ack packet back to the App for every packet received
-	 * This method doesn't care what devide is accessing it. it just responds to whoever sent the request
+	 * This method doesn't care what ip is accessing it. it just responds to whoever sent the request
+	 * @param destIP the method will record the sender's ip address in this variable
+	 * @param destPort the method will record the sender's port number in this variable
 	 */
-	private String receiveQuery(DatagramSocket sock) {
+	private String receiveQuery(DatagramSocket sock, InetAddress destIP, Integer destPort) {
 		byte buf[] = new byte[defaultBufSize];
 		try {
 			//Receive packet
@@ -61,14 +67,14 @@ public class MediaQueriesThread extends Thread{
 			sock.receive(pack);
 			
 			//Send ack
-			InetAddress ackAddress = pack.getAddress();
-			int ackPort = pack.getPort();
+			destIP = pack.getAddress();
+			destPort = pack.getPort();
 			//need to make sure this pads with null
 			byte[] ackBuf = Arrays.copyOf("ack".getBytes(), defaultBufSize);
-			DatagramPacket ackPacket = new DatagramPacket(ackBuf, ackBuf.length, ackAddress, ackPort);
+			DatagramPacket ackPacket = new DatagramPacket(ackBuf, ackBuf.length, destIP, destPort);
 			sock.send(ackPacket);
 		} catch (IOException e) {
-			getLog().warning("Error receiving Datagram packet on port " + piPort + "\n" + e.getMessage());
+			getLog().warning("Error receiving or sending Datagram packet on port " + piPort + "\n" + e.getMessage());
 		}
 		String message = new String(buf, StandardCharsets.UTF_8);
 		return message;
@@ -76,6 +82,11 @@ public class MediaQueriesThread extends Thread{
 	
 	private queryCode getOpCode(String message, Hashtable<Integer, queryCode> codeLookup) {
 		Integer intCode = 0;
+		String strOpCode = getOpCodeOrArgument(message, true);
+		if (strOpCode == null) {
+			getLog().warning("Could not find opcode in message: " + message);
+			return queryCode.UNKNOWN_QUERY;
+		}
 		try {
 			intCode = Integer.parseInt(getOpCodeOrArgument(message, true));
 		}catch (NumberFormatException e) {
@@ -88,8 +99,27 @@ public class MediaQueriesThread extends Thread{
 		return opCode;
 	}
 	
-	private Integer getArgument(String message) {
+	private String getStringArgument(String message) {
+		String str = getOpCodeOrArgument(message, false);
+		if (str == null) getLog().warning("Argument in video query was null: " + message);
+		return str;
+	}
+	
+	private Integer getIntegerArgument(String message) {
 		Integer arg = 0;
+		String strArg = getOpCodeOrArgument(message, false);
+		/*
+		 * Returning 0 here means an invalid argument won't break the program, but the downside
+		 * is that it will fail pretty silently. Need to find a way to fail in a way that notifies the app.
+		 */
+		if (strArg == null) {
+			getLog().warning("Could not find Integer argument: " + message);
+			/*
+			 * I return 0 instead of null because returning null make a query return every song/album there is, 
+			 * whereas 0 will make the queries return nothing
+			 */
+			return 0; 
+		}
 		try {
 			arg = Integer.parseInt(getOpCodeOrArgument(message, false));
 		}catch (NumberFormatException e) {
@@ -98,6 +128,12 @@ public class MediaQueriesThread extends Thread{
 		return arg;
 	}
 	
+	/**
+	 * 
+	 * @param message
+	 * @param opCode if true -> find op code. if false -> find argument
+	 * @return null if it can't find what it's looking for
+	 */
 	private String getOpCodeOrArgument(String message, boolean opCode) {
 		Pattern basicPattern = Pattern.compile(QUERY_REGEX);
 		Matcher matcher = basicPattern.matcher(message);
@@ -109,7 +145,7 @@ public class MediaQueriesThread extends Thread{
 			}
 		}else {
 			getLog().warning("pattern " + message + "did not match the regex");
-			return "0";
+			return null;
 		}
 	}
 	
@@ -118,26 +154,58 @@ public class MediaQueriesThread extends Thread{
 	 * @param message The query message sent from the Android App
 	 * @param codeLookup table linking the op codes to an enum
 	 * message formats:
-	 * 	SONG_QUERY: [1][album id]
-	 *  ALBUM_QUERY: [2][artist id]
-	 *  ARTIST_QUERY: [3][]
-	 *  VIDEO_QUERY: [4][]
+	 * 	SONGS_FOR_ALBUM_QUERY: [1][album id]
+	 *  SONGS_QUERY: [2][]
+	 *  ALBUMS_FOR_ARTIST_QUERY: [3][artist id]
+	 *  ALBUMS_QUERY: [4][]
+	 *  ARTIST_QUERY: [5][]
+	 *  VIDEOS_QUERY: [6][]
+	 *  VIDEOS_FOR_CATEGORY [7][category]
+	 *  CATEGORIES: [8][]
 	 *  
 	 */
-	private void parseQuery(String message, Hashtable<Integer, queryCode> codeLookup) {
+	private void parseQuery(String message, Hashtable<Integer, queryCode> codeLookup, InetAddress destIP, Integer destPort) {
 		//switch/case handing off operations to other methods
 		//other methods will hand off to database lookups, then format the results
 		queryCode opCode = getOpCode(message, codeLookup);
 		switch (opCode) {
-			case SONG_QUERY:
+			case SONGS_FOR_ALBUM_QUERY:
+				Integer albumId = getIntegerArgument(message);
+				SongQueryResponderThread songForAlbumResponder = new SongQueryResponderThread(albumId, destIP, destPort);
+				songForAlbumResponder.start();
 				break;
-			case ALBUM_QUERY:
+			case SONGS_QUERY:
+				SongQueryResponderThread songResponder = new SongQueryResponderThread(null, destIP, destPort);
+				songResponder.start();
 				break;
-			case ARTIST_QUERY:
+			case ALBUMS_FOR_ARTIST_QUERY:
+				Integer artistId = getIntegerArgument(message);
+				AlbumQueryResponderThread albumForArtistResponder = new AlbumQueryResponderThread(artistId, destIP, destPort);
+				albumForArtistResponder.start();
 				break;
-			case VIDEO_QUERY:
+			case ALBUMS_QUERY:
+				AlbumQueryResponderThread albumResponder = new AlbumQueryResponderThread(null, destIP, destPort);
+				albumResponder.start();
+				break;
+			case ARTISTS_QUERY:
+				ArtistQueryResponderThread artistsResponder = new ArtistQueryResponderThread(null, destIP, destPort);
+				artistsResponder.start();
+				break;
+			case VIDEOS_QUERY:
+				VideoQueryResponderThread videoResponder = new VideoQueryResponderThread(null, destIP, destPort);
+				videoResponder.start();
+				break;
+			case VIDEOS_FOR_CATEGORY_QUERY:
+				String category = getStringArgument(message);
+				VideoQueryResponderThread videoForCategoryResponder = new VideoQueryResponderThread(category, destIP, destPort);
+				videoForCategoryResponder.start();
+				break;
+			case CATEGORIES_QUERY:
+				CategoryQueryResponderThread categoryResponder = new CategoryQueryResponderThread(null, destIP, destPort);
+				categoryResponder.start();
 				break;
 			case UNKNOWN_QUERY:
+				getLog().warning("Unknown Query code " + message);
 				break;
 			default:
 				//how did this happen. I used an enum.
@@ -146,21 +214,7 @@ public class MediaQueriesThread extends Thread{
 	}
 	
 	
-	private void handleSongQuery(String message) {
-		Integer albumId = getArgument(message);
-	}
 	
-	private void handleAlbumQuery(String message) {
-		Integer artistId = getArgument(message);
-	}
-	
-	private void handleArtistQuery(String message) {
-		
-	}
-	
-	private void handleVideoQuery(String message) {
-		
-	}
 	private Logger getLog() {
 		return log;
 	}
@@ -169,9 +223,11 @@ public class MediaQueriesThread extends Thread{
 	 * start listening, hand off queries to new threads and resume listening 
 	 */
 	public void run() {
+		InetAddress destIP = null;
+		Integer destPort = 0;
 		while (true) {
-			String message = receiveQuery(recvSock);
-			parseQuery(message, codeLookup);
+			String message = receiveQuery(recvSock, destIP, destPort);
+			parseQuery(message, codeLookup, destIP, destPort);
 		}
 	}
 	
