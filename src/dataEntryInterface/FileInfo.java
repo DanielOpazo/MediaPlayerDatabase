@@ -5,6 +5,7 @@ import java.util.Date;
 public abstract class FileInfo {
 
 	private String title;
+	private String filePath;
 	private Date date;
 
 	public FileInfo(String title, Date date) {
@@ -15,6 +16,10 @@ public abstract class FileInfo {
 	public FileInfo() {
 		title = null;
 		date = null;
+	}
+	
+	public boolean isValid() {
+		return (title != null && filePath != null);
 	}
 	
 	public String getTitle() {
@@ -33,4 +38,12 @@ public abstract class FileInfo {
 		this.date = date;
 	}
 
+	public String getFilePath() {
+		return filePath;
+	}
+
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+	
 }

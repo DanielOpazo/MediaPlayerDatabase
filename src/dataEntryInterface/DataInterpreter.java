@@ -1,7 +1,16 @@
 package dataEntryInterface;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Date;
 
@@ -19,7 +28,7 @@ public class DataInterpreter {
 	private DataFromFile fileData;
 	private FileInfo fileInfo;
 	private final String videoTitleKey = "vtitle";
-	private final String songTitleKey = "stitle";
+	private final String songTitleKey = "mtitle";
 	private final int maxTitleLength = 30;
 	private final String artistKey = "artist";
 	private final String albumKey = "album";
@@ -78,11 +87,11 @@ public class DataInterpreter {
 		return getValueOrUnknown(categoryKey);
 	}
 	
-	private boolean isSong() {
+	public boolean isSong() {
 		return getFileData().getValuesHash().get(songTitleKey) == null;
 	}
 	
-	private boolean isVideo() {
+	public boolean isVideo() {
 		return getFileData().getValuesHash().get(videoTitleKey) == null;
 	}
 	
@@ -157,6 +166,7 @@ public class DataInterpreter {
 		}
 	}
 	
+	
 	public DataFromFile getFileData() {
 		return fileData;
 	}
@@ -177,10 +187,6 @@ public class DataInterpreter {
 		return log;
 	}
 	public static void main(String[] args) {
-		CoreDataAccess cda = new CoreDataAccess();
-		DataInterpreter di = new DataInterpreter("metadata.md");
-		di.getValuesFromFile();
-		cda.insertSong((SongFileInfo) di.getFileInfo());
 	}
 
 }
