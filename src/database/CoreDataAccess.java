@@ -303,9 +303,13 @@ public class CoreDataAccess {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Date sqlDate = rs.getDate(3);
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(sqlDate);
-				videos.add(new VideoDescriptor(rs.getString(1), rs.getString(2), String.valueOf(cal.get(Calendar.YEAR)), rs.getInt(4)));
+				String strDate = "unknown";
+				if (sqlDate != null) {
+					Calendar cal = Calendar.getInstance();
+					cal.setTime(sqlDate);
+					strDate = String.valueOf(cal.get(Calendar.YEAR));
+				}
+				videos.add(new VideoDescriptor(rs.getString(1), rs.getString(2), strDate, rs.getInt(4)));
 			}
 		}catch (SQLException e) {
 			getLog().log(Level.SEVERE, "SQL Error in getVideosForCategory", e);
