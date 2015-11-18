@@ -409,7 +409,7 @@ public class CoreDataAccess {
 			conn = getConnection();
 			if (getVideoPrimaryKey(videoInfo.getTitle()) == 0) {
 				ps = conn.prepareStatement(insertVideoQuery);
-				ps.setString(1, null);
+				ps.setString(1, videoInfo.getFilePath());
 				ps.setString(2, videoInfo.getTitle());
 				ps.setDate(3, new Date(videoInfo.getDate().getTime()));
 				ps.setString(4, videoInfo.getCategory());
@@ -438,7 +438,7 @@ public class CoreDataAccess {
 	private void createAlbumForArtist(int artistId, SongFileInfo songInfo, Connection conn, PreparedStatement ps) throws SQLException {
 		ps = conn.prepareStatement(insertAlbumIntoArtistQuery);
 		ps.setDate(1, new Date(songInfo.getDate().getTime()));
-		ps.setString(2, null); //TODO handle file paths
+		ps.setString(2, null);//TODO handle album pictures
 		ps.setInt(3, artistId);
 		ps.setString(4, songInfo.getAlbum());
 		ps.executeUpdate();
@@ -449,7 +449,7 @@ public class CoreDataAccess {
 		ps.setString(1, songInfo.getTitle());
 		ps.setInt(2, albumId);
 		ps.setInt(3, songInfo.getTrackNumber());
-		ps.setString(4, null); //TODO handle file paths
+		ps.setString(4, songInfo.getFilePath());
 		ps.executeUpdate();
 		
 	}
