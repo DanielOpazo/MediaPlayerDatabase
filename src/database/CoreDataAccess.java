@@ -14,11 +14,11 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import Descriptors.AlbumDescriptor;
-import Descriptors.ArtistDescriptor;
-import Descriptors.CategoryDescriptor;
-import Descriptors.SongDescriptor;
-import Descriptors.VideoDescriptor;
+import shared.AlbumDescriptor;
+import shared.ArtistDescriptor;
+import shared.CategoryDescriptor;
+import shared.SongDescriptor;
+import shared.VideoDescriptor;
 import dataEntryInterface.SongFileInfo;
 import dataEntryInterface.VideoFileInfo;
 

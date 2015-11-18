@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import Descriptors.SongDescriptor;
+import shared.SongDescriptor;
 import communication.MediaQueriesThread.queryCode;
 import database.CoreDataAccess;
 

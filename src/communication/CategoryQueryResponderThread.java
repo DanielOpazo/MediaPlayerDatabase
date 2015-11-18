@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.logging.Level;
 
-import Descriptors.CategoryDescriptor;
+import shared.CategoryDescriptor;
 
 
 public class CategoryQueryResponderThread extends QueryResponderThread {

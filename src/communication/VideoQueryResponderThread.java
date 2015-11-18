@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.logging.Level;
 
-import Descriptors.VideoDescriptor;
+import shared.VideoDescriptor;
 
 public class VideoQueryResponderThread extends QueryResponderThread {
 

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.logging.Level;
 
-import Descriptors.SongDescriptor;
+import shared.SongDescriptor;
 
 public class SongQueryResponderThread extends QueryResponderThread {
 

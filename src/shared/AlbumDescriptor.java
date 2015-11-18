@@ -1,4 +1,4 @@
-package Descriptors;
+package shared;
 
 import java.io.Serializable;
 

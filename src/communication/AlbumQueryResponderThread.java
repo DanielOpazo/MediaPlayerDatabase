@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.logging.Level;
 
-import Descriptors.AlbumDescriptor;
+import shared.AlbumDescriptor;
 
 public class AlbumQueryResponderThread extends QueryResponderThread {
 
