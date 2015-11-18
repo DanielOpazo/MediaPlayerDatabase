@@ -2,6 +2,7 @@ package communication;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
+import java.util.logging.Level;
 
 import Descriptors.ArtistDescriptor;
 
@@ -19,6 +20,7 @@ public class ArtistQueryResponderThread extends QueryResponderThread {
 	
 	@Override
 	public void run() {
+		getLog().log(Level.INFO, "Starting ArtistQueryResponderThread with argument " + getArg());
 		LinkedList<ArtistDescriptor> artists = getCoreDataAccess().getArtists();
 		sendListViaUdp(artists, getDestIp(), getDestPort());
 

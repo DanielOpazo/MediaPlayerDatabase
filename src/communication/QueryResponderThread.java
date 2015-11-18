@@ -9,8 +9,10 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import Descriptors.SongDescriptor;
@@ -25,7 +27,7 @@ public abstract class QueryResponderThread extends Thread{
 	Integer destPort;
 	private CoreDataAccess cda;
 	DatagramSocket sock;
-	private final int default_packet_size = 256;
+	private final int default_packet_size = 1024;
 	
 	public QueryResponderThread(Object arg, InetAddress destIP, Integer destPort) {
 		this.arg = arg;
@@ -41,49 +43,76 @@ public abstract class QueryResponderThread extends Thread{
 	
 
 	/**
-	 * method takes in a list of descriptors, serialized them, and transmits them 1 by 1
-	 * after transmitting a descriptor, it waits for an ack from the destination, then sends the enxt packet
+	 * 
 	 * @param descriptorList a list of the descriptors to be sent
 	 * @param destIP where to send
 	 * @param destPort what port to send to
 	 */
 	public <T> void sendListViaUdp(LinkedList<T> descriptorList, InetAddress destIP, Integer destPort) {
-		byte[] sendBuf = null;
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(default_packet_size);
+		ObjectOutputStream oos = null;
+		byte[] byteSerializedList = null;
+		try {
+			oos = new ObjectOutputStream(baos);
+			oos.writeObject(descriptorList);
+			oos.close();
+			byteSerializedList = baos.toByteArray();
+			baos.close();
+		}catch (IOException e) {
+			getLog().log(Level.SEVERE, "Error with ObjectOutputStream", e);
+		}
+		int byteIndex = 0;
+		//byte[] sendBuf = new byte[default_packet_size];
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(default_packet_size);
 		byte[] recvBuf = new byte[default_packet_size];
-		DatagramPacket sendPack = new DatagramPacket(sendBuf, sendBuf.length, destIP, destPort);
 		DatagramPacket recvPack = new DatagramPacket(recvBuf, recvBuf.length);
-		for (T item: descriptorList) {
-			//put T into buf. serialization goes here
-			sendBuf = serializeDescriptor(item);
+		DatagramPacket sendPack = null;
+		int endOfArray = default_packet_size;
+		while (byteIndex < byteSerializedList.length) {
+			if (byteSerializedList.length <= default_packet_size) {
+				byte[] smallPacket = new byte[byteSerializedList.length];
+				System.arraycopy(byteSerializedList, byteIndex, smallPacket, 0, byteSerializedList.length);
+				try {
+					bos.write(smallPacket);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}else {
+				if (byteIndex + default_packet_size > byteSerializedList.length) {
+					endOfArray = byteSerializedList.length - byteIndex;
+				}
+				byte[] sendBuf = new byte[default_packet_size];
+				System.arraycopy(byteSerializedList, byteIndex, sendBuf, 0, endOfArray);
+				try {
+					bos.write(sendBuf);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			sendPack = new DatagramPacket(bos.toByteArray(), bos.toByteArray().length, destIP, destPort);
 			try {
 				getSock().send(sendPack);
 				//wait for ack
-				sock.receive(recvPack); //implement a timeout here, and resend after
-				//is it even worth parsing the ack packet?
+				getSock().receive(recvPack);
+				getLog().log(Level.INFO, "Received: " + recvBuf.toString());
+			}catch (IOException e) {
+				getLog().log(Level.SEVERE, "Error with socket while transmitting serialized objects", e);
+			}
+			byteIndex += default_packet_size;
+		}
+		//If the buffer size is a multiple of 1024, send an empty packet to let the app know that information is done sending
+		/*
+		if (byteSerializedList.length % default_packet_size == 0) {
+			sendBuf = new byte[default_packet_size];
+			try {
+				getSock().send(sendPack);
 			} catch (IOException e) {
-				getLog().warning("error sending or receiving packet\n" + e.getMessage());
+				getLog().log(Level.SEVERE, "error sending empty packet", e);
 			}
 		}
-	}
-	
-	/**
-	 * 
-	 * @param descriptor the object to be serialized. must implement serializeable
-	 * @return
-	 */
-	private <T> byte[] serializeDescriptor(T descriptor) {
-		try {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-			ObjectOutputStream oos = new ObjectOutputStream(baos);
-			oos.writeObject(descriptor);
-			oos.close();
-			byte[] obj = baos.toByteArray();
-			baos.close();
-			return obj;
-		}catch (Exception e) {
-			getLog().warning("error with serialization\n" + e.getMessage());
-		}
-		return null;
+		*/
 	}
 	
 	public abstract void run();
@@ -132,7 +161,6 @@ public abstract class QueryResponderThread extends Thread{
 		return log;
 	}
 
-
 	public Object getArg() {
 		return arg;
 	}
@@ -140,19 +168,28 @@ public abstract class QueryResponderThread extends Thread{
 		this.arg = arg;
 	}
 	
+	public void finalize() {
+		getSock().close();
+	}
 	
 	public static void main(String[] args) {
 		LinkedList<SongDescriptor> list = new LinkedList<SongDescriptor>();
-		SongDescriptor s1 = new SongDescriptor("Stairway To Heaven", "Led Zeppelin", "Led Zeppelin IV", "1971", "5", 1);
-		SongDescriptor s2 = new SongDescriptor("Let It Be", "The Beatles", "Let It Be", "1968", "7", 2);
-		SongDescriptor s3 = new SongDescriptor("Accross The Universe", "The Beatles", "The White Album", "1968", "1", 3);
-		SongDescriptor s4 = new SongDescriptor("Black Dog", "Led Zeppelin", "Led Zeppelin IV", "1971", "8", 4);
-		SongDescriptor s5 = new SongDescriptor("A Day In The Life", "The Beatles", "Let It Be", "1970", "3", 5);
-		list.add(s1);
-		list.add(s2);
-		list.add(s3);
-		list.add(s4);
-		list.add(s5);
+		for (int i = 0 ;i < 40; i++) {
+			list.add(new SongDescriptor("Song" + i, "The Beatles" + i, "Let It Be" + i, "1970" + i, "3" + i, 5));
+		}
+		InetAddress addr = null;
+		try {
+			addr = InetAddress.getByName("192.168.0.17");
+			byte[] byteAddr = "192.168.0.17".getBytes();
+			addr = InetAddress.getByAddress(byteAddr);
+			System.out.println(addr.toString());
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		SongQueryResponderThread sqrt = new SongQueryResponderThread(null, addr, 8000);
+		sqrt.sendListViaUdp(list, addr, 8000);
+		/*
 		System.out.println(s5.getClass().getName());
 		byte[] obj = null;
 		try {
@@ -187,6 +224,7 @@ public abstract class QueryResponderThread extends Thread{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		*/
 		
 		
 		

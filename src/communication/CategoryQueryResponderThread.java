@@ -2,6 +2,7 @@ package communication;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
+import java.util.logging.Level;
 
 import Descriptors.CategoryDescriptor;
 
@@ -19,6 +20,7 @@ public class CategoryQueryResponderThread extends QueryResponderThread {
 	}
 	
 	public void run() {
+		getLog().log(Level.INFO, "Starting CategoryQueryResponderThread with argument " + getArg());
 		LinkedList<CategoryDescriptor> categories = getCoreDataAccess().getCategories();
 		sendListViaUdp(categories, getDestIp(), getDestPort());
 	}

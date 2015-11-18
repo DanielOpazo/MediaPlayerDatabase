@@ -2,6 +2,7 @@ package communication;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
+import java.util.logging.Level;
 
 import Descriptors.AlbumDescriptor;
 
@@ -18,6 +19,7 @@ public class AlbumQueryResponderThread extends QueryResponderThread {
 	}
 	@Override
 	public void run() {
+		getLog().log(Level.INFO, "Starting AlbumQueryResponderThread with argument " + getArg());
 		LinkedList<AlbumDescriptor> albums = getCoreDataAccess().getAlbumsForArtist((Integer) getArg());
 		sendListViaUdp(albums, getDestIp(), getDestPort());
 

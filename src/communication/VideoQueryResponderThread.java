@@ -2,6 +2,7 @@ package communication;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
+import java.util.logging.Level;
 
 import Descriptors.VideoDescriptor;
 
@@ -18,6 +19,7 @@ public class VideoQueryResponderThread extends QueryResponderThread {
 	}
 	
 	public void run() {
+		getLog().log(Level.INFO, "Starting VideoQueryResponderThread with argument " + getArg());
 		LinkedList<VideoDescriptor> videos = getCoreDataAccess().getVideosForCategory((String) getArg());
 		sendListViaUdp(videos, getDestIp(), getDestPort());
 	}

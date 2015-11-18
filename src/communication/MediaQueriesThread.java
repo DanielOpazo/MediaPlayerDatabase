@@ -6,8 +6,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,27 +29,28 @@ public class MediaQueriesThread extends Thread{
 	private Hashtable<Integer, queryCode> codeLookup;
 	private final String QUERY_REGEX = "\\[(\\d)\\]\\[(\\w*)\\]";  
 	
-	public MediaQueriesThread(InetAddress appAddress, int appPort, int piPort) {
-		this.piPort = piPort;
-		udpHelper = new UDPHelper(piPort);
+	public MediaQueriesThread(DatagramSocket recvSock) {
 		codeLookup = new Hashtable<Integer, queryCode>();
 		initializeCodeLookupTable(codeLookup);
+		this.recvSock = recvSock;
+		/*
 		try {
-			recvSock = new DatagramSocket(piPort);
+			recvSock = new DatagramSocket();
 		} catch (SocketException e) {
 			getLog().warning("Error creating Datagram Socket on port " + piPort + "\n" + e.getMessage());
 		}
+		*/
 	}
 	
 	private void initializeCodeLookupTable(Hashtable<Integer, queryCode> codeLookupTable) {
-		codeLookup.put(1, queryCode.SONGS_FOR_ALBUM_QUERY);
-		codeLookup.put(2, queryCode.SONGS_QUERY);
-		codeLookup.put(3, queryCode.ALBUMS_FOR_ARTIST_QUERY);
-		codeLookup.put(4, queryCode.ALBUMS_QUERY);
-		codeLookup.put(5, queryCode.ARTISTS_QUERY);
-		codeLookup.put(6, queryCode.VIDEOS_QUERY);
-		codeLookup.put(7, queryCode.VIDEOS_FOR_CATEGORY_QUERY);
-		codeLookup.put(8, queryCode.CATEGORIES_QUERY);
+		codeLookup.put(0, queryCode.SONGS_FOR_ALBUM_QUERY);
+		codeLookup.put(1, queryCode.SONGS_QUERY);
+		codeLookup.put(2, queryCode.ALBUMS_FOR_ARTIST_QUERY);
+		codeLookup.put(3, queryCode.ALBUMS_QUERY);
+		codeLookup.put(4, queryCode.ARTISTS_QUERY);
+		codeLookup.put(5, queryCode.VIDEOS_QUERY);
+		codeLookup.put(6, queryCode.VIDEOS_FOR_CATEGORY_QUERY);
+		codeLookup.put(7, queryCode.CATEGORIES_QUERY);
 	}
 
 	/**
@@ -59,25 +60,23 @@ public class MediaQueriesThread extends Thread{
 	 * @param destIP the method will record the sender's ip address in this variable
 	 * @param destPort the method will record the sender's port number in this variable
 	 */
-	private String receiveQuery(DatagramSocket sock, InetAddress destIP, Integer destPort) {
+	private AddressPortTuple receiveQuery(DatagramSocket sock) {
 		byte buf[] = new byte[defaultBufSize];
+		AddressPortTuple apt = new AddressPortTuple();
 		try {
 			//Receive packet
 			DatagramPacket pack = new DatagramPacket(buf, buf.length);
 			sock.receive(pack);
 			
 			//Send ack
-			destIP = pack.getAddress();
-			destPort = pack.getPort();
-			//need to make sure this pads with null
-			byte[] ackBuf = Arrays.copyOf("ack".getBytes(), defaultBufSize);
-			DatagramPacket ackPacket = new DatagramPacket(ackBuf, ackBuf.length, destIP, destPort);
-			sock.send(ackPacket);
+			apt.addr = pack.getAddress();
+			apt.portNum = pack.getPort();
 		} catch (IOException e) {
 			getLog().warning("Error receiving or sending Datagram packet on port " + piPort + "\n" + e.getMessage());
 		}
 		String message = new String(buf, StandardCharsets.UTF_8);
-		return message;
+		apt.message = message;
+		return apt;
 	}
 	
 	private queryCode getOpCode(String message, Hashtable<Integer, queryCode> codeLookup) {
@@ -154,20 +153,21 @@ public class MediaQueriesThread extends Thread{
 	 * @param message The query message sent from the Android App
 	 * @param codeLookup table linking the op codes to an enum
 	 * message formats:
-	 * 	SONGS_FOR_ALBUM_QUERY: [1][album id]
-	 *  SONGS_QUERY: [2][]
-	 *  ALBUMS_FOR_ARTIST_QUERY: [3][artist id]
-	 *  ALBUMS_QUERY: [4][]
-	 *  ARTIST_QUERY: [5][]
-	 *  VIDEOS_QUERY: [6][]
-	 *  VIDEOS_FOR_CATEGORY [7][category]
-	 *  CATEGORIES: [8][]
+	 * 	SONGS_FOR_ALBUM_QUERY: [0][album id]
+	 *  SONGS_QUERY: [1][]
+	 *  ALBUMS_FOR_ARTIST_QUERY: [2][artist id]
+	 *  ALBUMS_QUERY: [3][]
+	 *  ARTIST_QUERY: [4][]
+	 *  VIDEOS_QUERY: [5][]
+	 *  VIDEOS_FOR_CATEGORY [6][category]
+	 *  CATEGORIES: [7][]
 	 *  
 	 */
 	private void parseQuery(String message, Hashtable<Integer, queryCode> codeLookup, InetAddress destIP, Integer destPort) {
 		//switch/case handing off operations to other methods
 		//other methods will hand off to database lookups, then format the results
 		queryCode opCode = getOpCode(message, codeLookup);
+		
 		switch (opCode) {
 			case SONGS_FOR_ALBUM_QUERY:
 				Integer albumId = getIntegerArgument(message);
@@ -215,25 +215,45 @@ public class MediaQueriesThread extends Thread{
 	
 	
 	
+	public DatagramSocket getRecvSock() {
+		return recvSock;
+	}
+
+	public void setRecvSock(DatagramSocket recvSock) {
+		this.recvSock = recvSock;
+	}
+
 	private Logger getLog() {
 		return log;
+	}
+	
+	class AddressPortTuple {
+		public InetAddress addr;
+		public int portNum;
+		public String message;
 	}
 	
 	/**
 	 * start listening, hand off queries to new threads and resume listening 
 	 */
 	public void run() {
-		InetAddress destIP = null;
-		Integer destPort = 0;
+		getLog().log(Level.INFO, "Starting MediaQueryThread");
 		while (true) {
-			String message = receiveQuery(recvSock, destIP, destPort);
-			parseQuery(message, codeLookup, destIP, destPort);
+			AddressPortTuple apt = receiveQuery(getRecvSock());
+			parseQuery(apt.message, codeLookup, apt.addr, apt.portNum);
 		}
 	}
 	
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
+		DatagramSocket sock = null;
+		try {
+			sock = new DatagramSocket(8008);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		MediaQueriesThread mqt = new MediaQueriesThread(sock);
+		mqt.start();
 	}
 
 }

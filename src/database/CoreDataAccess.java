@@ -200,6 +200,7 @@ public class CoreDataAccess {
 		LinkedList<SongDescriptor> songs = new LinkedList<SongDescriptor>();
 		try {
 			conn = getConnection();
+			getLog().log(Level.INFO, "" + albumId);
 			String query = (albumId == null) ? getAllSongsQuery: getAllSongsForAlbumQuery;
 			ps = conn.prepareStatement(query);
 			if (albumId != null) ps.setInt(1, albumId);
@@ -239,7 +240,7 @@ public class CoreDataAccess {
 			if (artistId != null) ps.setInt(1, artistId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				Date sqlDate = rs.getDate(4);
+				Date sqlDate = rs.getDate(2);
 				Calendar cal = Calendar.getInstance();
 				cal.setTime(sqlDate);
 				albums.add(new AlbumDescriptor(rs.getString(1), rs.getString(4), String.valueOf(cal.get(Calendar.YEAR)), rs.getInt(3)));
@@ -298,7 +299,7 @@ public class CoreDataAccess {
 			conn = getConnection();
 			String query = (category == null) ? getAllVideosQuery : getAllVideosForCategoryQuery;
 			ps = conn.prepareStatement(query);
-			if (category == null) ps.setString(1, category);
+			if (category != null) ps.setString(1, category);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Date sqlDate = rs.getDate(3);
