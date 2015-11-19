@@ -46,6 +46,7 @@ public class CoreDataAccess {
 	private final String getCategoriesQuery = "select distinct category from video;";
 	
 	private static final Logger log = Logger.getLogger(CoreDataAccess.class.getName());
+	private final String nullDateString = "Unknown";
 	
 	/**
 	 * 
@@ -109,7 +110,11 @@ public class CoreDataAccess {
 			conn = getConnection();
 			ps = conn.prepareStatement(getAlbumIdQuery);
 			ps.setString(1, songInfo.getAlbum());
-			ps.setDate(2, new Date(songInfo.getDate().getTime()));
+			if (songInfo.getDate() != null){
+				ps.setDate(2, new Date(songInfo.getDate().getTime()));
+			}else {
+				ps.setDate(2, null);
+			}
 			ps.setString(3, songInfo.getArtist());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
@@ -200,16 +205,14 @@ public class CoreDataAccess {
 		LinkedList<SongDescriptor> songs = new LinkedList<SongDescriptor>();
 		try {
 			conn = getConnection();
-			getLog().log(Level.INFO, "" + albumId);
 			String query = (albumId == null) ? getAllSongsQuery: getAllSongsForAlbumQuery;
 			ps = conn.prepareStatement(query);
 			if (albumId != null) ps.setInt(1, albumId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Date sqlDate = rs.getDate(4);
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(sqlDate);
-				songs.add(new SongDescriptor(rs.getString(1), rs.getString(6), rs.getString(5), String.valueOf(cal.get(Calendar.YEAR)), String.valueOf(rs.getInt(2)), rs.getInt(3)));
+				String strDate = getYearOrUnknown(sqlDate);
+				songs.add(new SongDescriptor(rs.getString(1), rs.getString(6), rs.getString(5), strDate, String.valueOf(rs.getInt(2)), rs.getInt(3)));
 			}
 		}catch (SQLException e) {
 			getLog().log(Level.SEVERE, "SQL Error in getSongsForAlbum", e);
@@ -241,9 +244,8 @@ public class CoreDataAccess {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Date sqlDate = rs.getDate(2);
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(sqlDate);
-				albums.add(new AlbumDescriptor(rs.getString(1), rs.getString(4), String.valueOf(cal.get(Calendar.YEAR)), rs.getInt(3)));
+				String strDate = getYearOrUnknown(sqlDate);
+				albums.add(new AlbumDescriptor(rs.getString(1), rs.getString(4), strDate, rs.getInt(3)));
 			}
 		}catch (SQLException e) {
 			getLog().log(Level.SEVERE, "SQL Error in getAlbumsForArtist", e);
@@ -256,6 +258,16 @@ public class CoreDataAccess {
 			}
 		}
 		return albums;
+	}
+
+	private String getYearOrUnknown(Date sqlDate) {
+		String strDate = nullDateString;
+		if (sqlDate != null) {
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(sqlDate);
+			strDate = String.valueOf(cal.get(Calendar.YEAR));
+		}
+		return strDate;
 	}
 	
 	/**
@@ -303,12 +315,7 @@ public class CoreDataAccess {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Date sqlDate = rs.getDate(3);
-				String strDate = "unknown";
-				if (sqlDate != null) {
-					Calendar cal = Calendar.getInstance();
-					cal.setTime(sqlDate);
-					strDate = String.valueOf(cal.get(Calendar.YEAR));
-				}
+				String strDate = getYearOrUnknown(sqlDate);
 				videos.add(new VideoDescriptor(rs.getString(1), rs.getString(2), strDate, rs.getInt(4)));
 			}
 		}catch (SQLException e) {
@@ -411,7 +418,11 @@ public class CoreDataAccess {
 				ps = conn.prepareStatement(insertVideoQuery);
 				ps.setString(1, videoInfo.getFilePath());
 				ps.setString(2, videoInfo.getTitle());
-				ps.setDate(3, new Date(videoInfo.getDate().getTime()));
+				if (videoInfo.getDate() != null) {
+					ps.setDate(3, new Date(videoInfo.getDate().getTime()));
+				}else {
+					ps.setDate(3, null);
+				}
 				ps.setString(4, videoInfo.getCategory());
 				ps.setString(5, null);
 				ps.executeUpdate();
@@ -437,7 +448,11 @@ public class CoreDataAccess {
 	
 	private void createAlbumForArtist(int artistId, SongFileInfo songInfo, Connection conn, PreparedStatement ps) throws SQLException {
 		ps = conn.prepareStatement(insertAlbumIntoArtistQuery);
-		ps.setDate(1, new Date(songInfo.getDate().getTime()));
+		if (songInfo.getDate() != null) {
+			ps.setDate(1, new Date(songInfo.getDate().getTime()));
+		}else {
+			ps.setDate(1, null);
+		}
 		ps.setString(2, null);//TODO handle album pictures
 		ps.setInt(3, artistId);
 		ps.setString(4, songInfo.getAlbum());

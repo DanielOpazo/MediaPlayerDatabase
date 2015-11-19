@@ -1,20 +1,9 @@
 package dataEntryInterface;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.DirectoryIteratorException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Date;
-
-import database.CoreDataAccess;
 
 /**
  * 
