@@ -18,7 +18,7 @@ public class DataInterpreterTest {
 
 	DataInterpreter di;
 	Hashtable<String, String> valuesHash;
-	private final String songTitleKey = "stitle";
+	private final String songTitleKey = "mtitle";
 	private final String videoTitleKey = "vtitle";
 	private final String artistKey = "artist";
 	private final String albumKey = "album";
