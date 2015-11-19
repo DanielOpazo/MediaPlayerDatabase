@@ -88,11 +88,11 @@ public class DataInterpreter {
 	}
 	
 	public boolean isSong() {
-		return getFileData().getValuesHash().get(songTitleKey) == null;
+		return getFileData().getValuesHash().get(songTitleKey) != null;
 	}
 	
 	public boolean isVideo() {
-		return getFileData().getValuesHash().get(videoTitleKey) == null;
+		return getFileData().getValuesHash().get(videoTitleKey) != null;
 	}
 	
 	/**
