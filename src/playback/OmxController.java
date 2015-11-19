@@ -67,7 +67,7 @@ public class OmxController {
         StreamWrapper error, output;
  
         try {
-            Process proc = rt.exec("omxplayer " + "/home/pi/sftp_dump/Boat Race.mp4");
+            Process proc = rt.exec("omxplayer " + "/home/pi/sftp_dump/Boat.mp4");
             error = rte.getStreamWrapper(proc.getErrorStream(), "ERROR");
             output = rte.getStreamWrapper(proc.getInputStream(), "OUTPUT");
             int exitVal = 0;

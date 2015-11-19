@@ -17,8 +17,8 @@ import database.CoreDataAccess;
 public class DataInterfaceController {
 
 	private static final Logger log = Logger.getLogger(DataInterfaceController.class.getName());
-	private final String metadataFileName = "metadata.md";
-	private final String finishedFileName = "finished";
+	private final String metadataFileName = "Metadata.md";
+	private final String finishedFileName = "Finish.md";
 	private final String supportedMediaFileTypesGlob = "*.{mp3,mkv,mp4}";
 	/*
 	 * Windows paths
@@ -107,7 +107,7 @@ public class DataInterfaceController {
 			valid = true;
 		} catch (FileNotFoundException e) {
 			//Don't log the exception because most of the time when this is called, there will be no file
-			getLog().log(Level.INFO, "No file found");
+			//getLog().log(Level.INFO, "No file found");
 		}catch (IOException e) {
 			getLog().log(Level.SEVERE, "problem closing file readers", e);
 		}
