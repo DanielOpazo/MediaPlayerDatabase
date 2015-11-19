@@ -37,17 +37,14 @@ public class OmxController {
 	        }
 	    }
 	}
-	  
-	 
-	// this is where the action is
-	public static void main(String[] args) {
-		System.out.println("This happened");
-        Runtime rt = Runtime.getRuntime();
+
+	public static void executeOMXcmd(String command) {
+		Runtime rt = Runtime.getRuntime();
         OmxController rte = new OmxController();
         StreamWrapper error, output;
  
         try {
-            Process proc = rt.exec("ping localhost");
+            Process proc = rt.exec(command);
             error = rte.getStreamWrapper(proc.getErrorStream(), "ERROR");
             output = rte.getStreamWrapper(proc.getInputStream(), "OUTPUT");
             int exitVal = 0;
@@ -63,5 +60,31 @@ public class OmxController {
         } catch (InterruptedException e) {
                     e.printStackTrace();
         }
-    }	
+	}	
+	public static void startOMX(String filepath) {
+		Runtime rt = Runtime.getRuntime();
+        OmxController rte = new OmxController();
+        StreamWrapper error, output;
+ 
+        try {
+            Process proc = rt.exec("omxplayer " + "/home/pi/sftp_dump/Boat Race.mp4");
+            error = rte.getStreamWrapper(proc.getErrorStream(), "ERROR");
+            output = rte.getStreamWrapper(proc.getInputStream(), "OUTPUT");
+            int exitVal = 0;
+ 
+            error.start();
+            output.start();
+            error.join(3000);
+            output.join(3000);
+            exitVal = proc.waitFor();
+            System.out.println("Output: "+output.message+"\nError: "+error.message);
+        } catch (IOException e) {
+                    e.printStackTrace();
+        } catch (InterruptedException e) {
+                    e.printStackTrace();
+        }
+	}
+	public static void main(String[] args) {
+		startOMX(null);
+	}
 }
