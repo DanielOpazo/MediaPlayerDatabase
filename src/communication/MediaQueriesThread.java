@@ -21,7 +21,7 @@ public class MediaQueriesThread extends Thread{
 	private int piPort;
 	private DatagramSocket recvSock;
 	private static final Logger log = Logger.getLogger(MediaQueriesThread.class.getName());
-	private final int defaultBufSize = 256;
+	private final int defaultBufSize = 1024;
 	UDPHelper udpHelper;
 	public enum queryCode {
 		SONGS_FOR_ALBUM_QUERY, SONGS_QUERY, ALBUMS_FOR_ARTIST_QUERY, ALBUMS_QUERY, ARTISTS_QUERY, VIDEOS_QUERY, VIDEOS_FOR_CATEGORY_QUERY, CATEGORIES_QUERY, UNKNOWN_QUERY;
@@ -33,13 +33,6 @@ public class MediaQueriesThread extends Thread{
 		codeLookup = new Hashtable<Integer, queryCode>();
 		initializeCodeLookupTable(codeLookup);
 		this.recvSock = recvSock;
-		/*
-		try {
-			recvSock = new DatagramSocket();
-		} catch (SocketException e) {
-			getLog().warning("Error creating Datagram Socket on port " + piPort + "\n" + e.getMessage());
-		}
-		*/
 	}
 	
 	private void initializeCodeLookupTable(Hashtable<Integer, queryCode> codeLookupTable) {
@@ -55,20 +48,19 @@ public class MediaQueriesThread extends Thread{
 
 	/**
 	 * Enter receiving mode. Wait for a query from the app, and extract the query from the message
-	 * Send ack packet back to the App for every packet received
-	 * This method doesn't care what ip is accessing it. it just responds to whoever sent the request
+	 * This method doesn't care what IP address is accessing it. it just responds to whoever sent the request
 	 * @param destIP the method will record the sender's ip address in this variable
 	 * @param destPort the method will record the sender's port number in this variable
 	 */
-	private AddressPortTuple receiveQuery(DatagramSocket sock) {
+	private AddressPortMessageTuple receiveQuery(DatagramSocket sock) {
 		byte buf[] = new byte[defaultBufSize];
-		AddressPortTuple apt = new AddressPortTuple();
+		AddressPortMessageTuple apt = new AddressPortMessageTuple();
 		try {
 			//Receive packet
 			DatagramPacket pack = new DatagramPacket(buf, buf.length);
 			sock.receive(pack);
 			
-			//Send ack
+			//get info of sender
 			apt.addr = pack.getAddress();
 			apt.portNum = pack.getPort();
 		} catch (IOException e) {
@@ -227,10 +219,17 @@ public class MediaQueriesThread extends Thread{
 		return log;
 	}
 	
-	class AddressPortTuple {
-		public InetAddress addr;
-		public int portNum;
-		public String message;
+	/**
+	 * Basically a struct.
+	 * Used to return three values from the method that received query packets,
+	 * and then pass the values to the query parser
+	 * @author Daniel
+	 *
+	 */
+	private class AddressPortMessageTuple {
+		private InetAddress addr;
+		private int portNum;
+		private String message;
 	}
 	
 	/**
@@ -239,8 +238,8 @@ public class MediaQueriesThread extends Thread{
 	public void run() {
 		getLog().log(Level.INFO, "Starting MediaQueryThread");
 		while (true) {
-			AddressPortTuple apt = receiveQuery(getRecvSock());
-			parseQuery(apt.message, codeLookup, apt.addr, apt.portNum);
+			AddressPortMessageTuple apmt = receiveQuery(getRecvSock());
+			parseQuery(apmt.message, codeLookup, apmt.addr, apmt.portNum);
 		}
 	}
 	

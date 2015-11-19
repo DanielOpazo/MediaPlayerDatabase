@@ -466,9 +466,8 @@ public class CoreDataAccess {
 		ps.setInt(3, songInfo.getTrackNumber());
 		ps.setString(4, songInfo.getFilePath());
 		ps.executeUpdate();
-		
 	}
-	
+
 	public static Logger getLog() {
 		return log;
 	}
