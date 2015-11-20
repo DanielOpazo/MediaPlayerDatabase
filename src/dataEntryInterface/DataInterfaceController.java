@@ -23,13 +23,13 @@ public class DataInterfaceController {
 	/*
 	 * Windows paths
 	 */
-	private final String landingDirectoryFullPath = "C:\\Users\\Daniel\\workspace\\fileTests\\landingDir\\";
-	private final String storageDirectoryFullPath = "C:\\Users\\Daniel\\workspace\\fileTests\\storageDir\\";
+	//private final String landingDirectoryFullPath = "C:\\Users\\Daniel\\workspace\\fileTests\\landingDir\\";
+	//private final String storageDirectoryFullPath = "C:\\Users\\Daniel\\workspace\\fileTests\\storageDir\\";
 	/*
 	 * Linux paths
 	 */
-	//private final String landingDirectoryFullPath = "/home/pi/sftp_dump/";
-	//private final String storageDirectoryFullPath = "/home/pi/media_storage/";
+	private final String landingDirectoryFullPath = "/home/pi/sftp_dump/";
+	private final String storageDirectoryFullPath = "/home/pi/media_storage/";
 	/**
 	 * 
 	 */

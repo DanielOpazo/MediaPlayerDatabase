@@ -38,12 +38,14 @@ public class CoreDataAccess {
 	private final String insertVideoQuery = "insert into video (video_path, title, release_date, category, cover_picture_path) values (?, ?, ?, ?, ?)";
 	private final String getAllSongsQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id;";
 	private final String getAllSongsForAlbumQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id where al.album_id = ?;";
+	private final String getAllSongsForArtistQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id  inner join artist as ar on al.artist_id = ar.artist_id where ar.artist_id = ?;";
 	private final String getAllAlbumsQuery = "select al.title, al.date, al.album_id, ar.name from album as al inner join artist as ar on al.artist_id = ar.artist_id;";
 	private final String getAllAlbumsForArtistQuery = "select al.title, al.date, al.album_id, ar.name from album as al inner join artist as ar on al.artist_id = ar.artist_id where ar.artist_id = ?";
 	private final String getAllArtistsQuery = "select artist_id, name from artist;";
 	private final String getAllVideosQuery = "select title, category, release_date, video_id from video;";
 	private final String getAllVideosForCategoryQuery = "select title, category, release_date, video_id from video where category = ?;";
 	private final String getCategoriesQuery = "select distinct category from video;";
+	private final String getFilePathForSongQuery = "select file_path from song where song_id = ?";
 	
 	private static final Logger log = Logger.getLogger(CoreDataAccess.class.getName());
 	private final String nullDateString = "Unknown";
@@ -95,6 +97,31 @@ public class CoreDataAccess {
 			}
 		}
 		return result;
+	}
+	
+	public String getFilePathForSong(int songId) {
+		PreparedStatement ps = null;
+		Connection conn = null;
+		String filePath = "";
+		try {
+			conn = getConnection();
+			ps = conn.prepareStatement(getFilePathForSongQuery);
+			ps.setInt(1, songId);
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				filePath = rs.getString(1);
+			}
+		} catch (SQLException e) {
+			getLog().log(Level.SEVERE, "SQL Error in getFilePathForSong", e);
+		}finally {
+			try {
+				if (ps != null) ps.close();
+				if (conn != null) conn.close();
+			}catch (SQLException e) {
+				getLog().log(Level.SEVERE, "Error closing JDBC resources\n", e);
+			}
+		}
+		return filePath;
 	}
 	
 	/**
@@ -209,11 +236,39 @@ public class CoreDataAccess {
 			ps = conn.prepareStatement(query);
 			if (albumId != null) ps.setInt(1, albumId);
 			ResultSet rs = ps.executeQuery();
-			while (rs.next()) {
-				Date sqlDate = rs.getDate(4);
-				String strDate = getYearOrUnknown(sqlDate);
-				songs.add(new SongDescriptor(rs.getString(1), rs.getString(6), rs.getString(5), strDate, String.valueOf(rs.getInt(2)), rs.getInt(3)));
+			addSongToList(rs, songs);
+		}catch (SQLException e) {
+			getLog().log(Level.SEVERE, "SQL Error in getSongsForAlbum", e);
+		}finally {
+			try {
+				if (ps != null) ps.close();
+				if (conn != null) conn.close();
+			}catch (SQLException e) {
+				getLog().log(Level.SEVERE, "Error closing JDBC resources\n", e);
 			}
+		}
+		return songs;
+	}
+	
+	private void addSongToList(ResultSet rs, LinkedList<SongDescriptor> songs) throws SQLException{
+		while (rs.next()) {
+			Date sqlDate = rs.getDate(4);
+			String strDate = getYearOrUnknown(sqlDate);
+			songs.add(new SongDescriptor(rs.getString(1), rs.getString(6), rs.getString(5), strDate, String.valueOf(rs.getInt(2)), rs.getInt(3)));
+		}
+	}
+	
+	public LinkedList<SongDescriptor> getSongsForArtist(int artistId) {
+		PreparedStatement ps = null;
+		Connection conn = null;
+		LinkedList<SongDescriptor> songs = new LinkedList<SongDescriptor>();
+		try {
+			conn = getConnection();
+			String query = getAllSongsForArtistQuery;
+			ps = conn.prepareStatement(query);
+			ps.setInt(1, artistId);
+			ResultSet rs = ps.executeQuery();
+			addSongToList(rs, songs);
 		}catch (SQLException e) {
 			getLog().log(Level.SEVERE, "SQL Error in getSongsForAlbum", e);
 		}finally {

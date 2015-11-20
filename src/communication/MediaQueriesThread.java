@@ -24,7 +24,7 @@ public class MediaQueriesThread extends Thread{
 	private final int defaultBufSize = 1024;
 	UDPHelper udpHelper;
 	public enum queryCode {
-		SONGS_FOR_ALBUM_QUERY, SONGS_QUERY, ALBUMS_FOR_ARTIST_QUERY, ALBUMS_QUERY, ARTISTS_QUERY, VIDEOS_QUERY, VIDEOS_FOR_CATEGORY_QUERY, CATEGORIES_QUERY, UNKNOWN_QUERY;
+		SONGS_FOR_ALBUM_QUERY, SONGS_FOR_ARTIST_QUERY, SONGS_QUERY, ALBUMS_FOR_ARTIST_QUERY, ALBUMS_QUERY, ARTISTS_QUERY, VIDEOS_QUERY, VIDEOS_FOR_CATEGORY_QUERY, CATEGORIES_QUERY, UNKNOWN_QUERY;
 	}
 	private Hashtable<Integer, queryCode> codeLookup;
 	private final String QUERY_REGEX = "\\[(\\d)\\]\\[(\\w*)\\]";  
@@ -37,13 +37,14 @@ public class MediaQueriesThread extends Thread{
 	
 	private void initializeCodeLookupTable(Hashtable<Integer, queryCode> codeLookupTable) {
 		codeLookup.put(0, queryCode.SONGS_FOR_ALBUM_QUERY);
-		codeLookup.put(1, queryCode.SONGS_QUERY);
-		codeLookup.put(2, queryCode.ALBUMS_FOR_ARTIST_QUERY);
-		codeLookup.put(3, queryCode.ALBUMS_QUERY);
-		codeLookup.put(4, queryCode.ARTISTS_QUERY);
-		codeLookup.put(5, queryCode.VIDEOS_QUERY);
-		codeLookup.put(6, queryCode.VIDEOS_FOR_CATEGORY_QUERY);
-		codeLookup.put(7, queryCode.CATEGORIES_QUERY);
+		codeLookup.put(1, queryCode.SONGS_FOR_ARTIST_QUERY);
+		codeLookup.put(2, queryCode.SONGS_QUERY);
+		codeLookup.put(3, queryCode.ALBUMS_FOR_ARTIST_QUERY);
+		codeLookup.put(4, queryCode.ALBUMS_QUERY);
+		codeLookup.put(5, queryCode.ARTISTS_QUERY);
+		codeLookup.put(6, queryCode.VIDEOS_QUERY);
+		codeLookup.put(7, queryCode.VIDEOS_FOR_CATEGORY_QUERY);
+		codeLookup.put(8, queryCode.CATEGORIES_QUERY);
 	}
 
 	/**
@@ -146,13 +147,13 @@ public class MediaQueriesThread extends Thread{
 	 * @param codeLookup table linking the op codes to an enum
 	 * message formats:
 	 * 	SONGS_FOR_ALBUM_QUERY: [0][album id]
-	 *  SONGS_QUERY: [1][]
-	 *  ALBUMS_FOR_ARTIST_QUERY: [2][artist id]
-	 *  ALBUMS_QUERY: [3][]
-	 *  ARTIST_QUERY: [4][]
-	 *  VIDEOS_QUERY: [5][]
-	 *  VIDEOS_FOR_CATEGORY [6][category]
-	 *  CATEGORIES: [7][]
+	 *  SONGS_QUERY: [2][]
+	 *  ALBUMS_FOR_ARTIST_QUERY: [3][artist id]
+	 *  ALBUMS_QUERY: [4][]
+	 *  ARTIST_QUERY: [5][]
+	 *  VIDEOS_QUERY: [6][]
+	 *  VIDEOS_FOR_CATEGORY [7][category]
+	 *  CATEGORIES: [8][]
 	 *  
 	 */
 	private void parseQuery(String message, Hashtable<Integer, queryCode> codeLookup, InetAddress destIP, Integer destPort) {
@@ -165,6 +166,11 @@ public class MediaQueriesThread extends Thread{
 				Integer albumId = getIntegerArgument(message);
 				SongQueryResponderThread songForAlbumResponder = new SongQueryResponderThread(albumId, destIP, destPort);
 				songForAlbumResponder.start();
+				break;
+			case SONGS_FOR_ARTIST_QUERY:
+				Integer artistIdForSong = getIntegerArgument(message);
+				SongForArtistQueryResponderThread songForArtistResponder = new SongForArtistQueryResponderThread(artistIdForSong, destIP, destPort);
+				songForArtistResponder.start();
 				break;
 			case SONGS_QUERY:
 				SongQueryResponderThread songResponder = new SongQueryResponderThread(null, destIP, destPort);
