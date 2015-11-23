@@ -146,6 +146,7 @@ public class MediaQueriesThread extends Thread{
 	 * @param codeLookup table linking the op codes to an enum
 	 * message formats:
 	 * 	SONGS_FOR_ALBUM_QUERY: [0][album id]
+	 *  SONGS_FOR_ARTIST_QUERY [1][artist id]
 	 *  SONGS_QUERY: [2][]
 	 *  ALBUMS_FOR_ARTIST_QUERY: [3][artist id]
 	 *  ALBUMS_QUERY: [4][]
