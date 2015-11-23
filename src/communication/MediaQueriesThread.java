@@ -258,6 +258,7 @@ public class MediaQueriesThread extends Thread{
 		}
 		MediaQueriesThread mqt = new MediaQueriesThread(sock);
 		mqt.start();
+		sock.close();
 	}
 
 }
