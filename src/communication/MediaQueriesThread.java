@@ -18,11 +18,10 @@ import java.util.regex.Pattern;
  * Class waits for a query from the Android app, responds to the query, then resumes waiting mode
  */
 public class MediaQueriesThread extends Thread{
-	private int piPort;
+	private final static int piPort = 8008;
 	private DatagramSocket recvSock;
 	private static final Logger log = Logger.getLogger(MediaQueriesThread.class.getName());
 	private final int defaultBufSize = 1024;
-	UDPHelper udpHelper;
 	public enum queryCode {
 		SONGS_FOR_ALBUM_QUERY, SONGS_FOR_ARTIST_QUERY, SONGS_QUERY, ALBUMS_FOR_ARTIST_QUERY, ALBUMS_QUERY, ARTISTS_QUERY, VIDEOS_QUERY, VIDEOS_FOR_CATEGORY_QUERY, CATEGORIES_QUERY, UNKNOWN_QUERY;
 	}
@@ -102,7 +101,7 @@ public class MediaQueriesThread extends Thread{
 		String strArg = getOpCodeOrArgument(message, false);
 		/*
 		 * Returning 0 here means an invalid argument won't break the program, but the downside
-		 * is that it will fail pretty silently. Need to find a way to fail in a way that notifies the app.
+		 * is that it will fail pretty silently.
 		 */
 		if (strArg == null) {
 			getLog().warning("Could not find Integer argument: " + message);
@@ -221,7 +220,7 @@ public class MediaQueriesThread extends Thread{
 		this.recvSock = recvSock;
 	}
 
-	private Logger getLog() {
+	private static Logger getLog() {
 		return log;
 	}
 	
@@ -242,7 +241,7 @@ public class MediaQueriesThread extends Thread{
 	 * start listening, hand off queries to new threads and resume listening 
 	 */
 	public void run() {
-		getLog().log(Level.INFO, "Starting MediaQueryThread");
+		getLog().log(Level.INFO, "Starting MediaQueriesThread");
 		while (true) {
 			AddressPortMessageTuple apmt = receiveQuery(getRecvSock());
 			parseQuery(apmt.message, codeLookup, apmt.addr, apmt.portNum);
@@ -252,10 +251,9 @@ public class MediaQueriesThread extends Thread{
 	public static void main(String[] args) {
 		DatagramSocket sock = null;
 		try {
-			sock = new DatagramSocket(8008);
+			sock = new DatagramSocket(piPort);
 		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			getLog().log(Level.SEVERE, "Could not open Datagram Socket on port " + piPort);
 		}
 		MediaQueriesThread mqt = new MediaQueriesThread(sock);
 		mqt.start();
