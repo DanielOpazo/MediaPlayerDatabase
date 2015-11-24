@@ -13,14 +13,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 
- * @author Daniel
  * Class waits for a query from the Android app, responds to the query, then resumes waiting mode
+ * @author Daniel
  */
 public class MediaQueriesThread extends Thread{
-	private final static int piPort = 8008;
+	private final static int PIPORT = 8008;
 	private DatagramSocket recvSock;
-	private static final Logger log = Logger.getLogger(MediaQueriesThread.class.getName());
+	private final static Logger log = Logger.getLogger(MediaQueriesThread.class.getName());
 	private final int defaultBufSize = 1024;
 	public enum queryCode {
 		SONGS_FOR_ALBUM_QUERY, SONGS_FOR_ARTIST_QUERY, SONGS_QUERY, ALBUMS_FOR_ARTIST_QUERY, ALBUMS_QUERY, ARTISTS_QUERY, VIDEOS_QUERY, VIDEOS_FOR_CATEGORY_QUERY, CATEGORIES_QUERY, UNKNOWN_QUERY;
@@ -29,12 +28,12 @@ public class MediaQueriesThread extends Thread{
 	private final String QUERY_REGEX = "\\[(\\d)\\]\\[(\\w*)\\]";  
 	
 	public MediaQueriesThread(DatagramSocket recvSock) {
-		codeLookup = new Hashtable<Integer, queryCode>();
-		initializeCodeLookupTable(codeLookup);
+		codeLookup = new Hashtable<>();
+		initializeCodeLookupTable();
 		this.recvSock = recvSock;
 	}
 	
-	private void initializeCodeLookupTable(Hashtable<Integer, queryCode> codeLookupTable) {
+	private void initializeCodeLookupTable() {
 		codeLookup.put(0, queryCode.SONGS_FOR_ALBUM_QUERY);
 		codeLookup.put(1, queryCode.SONGS_FOR_ARTIST_QUERY);
 		codeLookup.put(2, queryCode.SONGS_QUERY);
@@ -49,8 +48,7 @@ public class MediaQueriesThread extends Thread{
 	/**
 	 * Enter receiving mode. Wait for a query from the app, and extract the query from the message
 	 * This method doesn't care what IP address is accessing it. it just responds to whoever sent the request
-	 * @param destIP the method will record the sender's ip address in this variable
-	 * @param destPort the method will record the sender's port number in this variable
+	 * @param sock An initialized Datagram Socket to be used for communicating with the Android App
 	 */
 	private AddressPortMessageTuple receiveQuery(DatagramSocket sock) {
 		byte buf[] = new byte[defaultBufSize];
@@ -64,13 +62,18 @@ public class MediaQueriesThread extends Thread{
 			apt.addr = pack.getAddress();
 			apt.portNum = pack.getPort();
 		} catch (IOException e) {
-			getLog().warning("Error receiving or sending Datagram packet on port " + piPort + "\n" + e.getMessage());
+			getLog().warning("Error receiving or sending Datagram packet on port " + PIPORT + "\n" + e.getMessage());
 		}
-		String message = new String(buf, StandardCharsets.UTF_8);
-		apt.message = message;
+		apt.message = new String(buf, StandardCharsets.UTF_8);
 		return apt;
 	}
 	
+	/**
+	 * 
+	 * @param message the query message sent from the Android app
+	 * @param codeLookup The table that maps query codes to the queryCode enum
+	 * @return the query code as an instance of the enum queryCode
+	 */
 	private queryCode getOpCode(String message, Hashtable<Integer, queryCode> codeLookup) {
 		Integer intCode = 0;
 		String strOpCode = getOpCodeOrArgument(message, true);
@@ -79,7 +82,7 @@ public class MediaQueriesThread extends Thread{
 			return queryCode.UNKNOWN_QUERY;
 		}
 		try {
-			intCode = Integer.parseInt(getOpCodeOrArgument(message, true));
+			intCode = Integer.parseInt(strOpCode);
 		}catch (NumberFormatException e) {
 			getLog().warning("Could not parse Integer opcode for message " + message);
 		}
@@ -112,7 +115,7 @@ public class MediaQueriesThread extends Thread{
 			return 0; 
 		}
 		try {
-			arg = Integer.parseInt(getOpCodeOrArgument(message, false));
+			arg = Integer.parseInt(strArg);
 		}catch (NumberFormatException e) {
 			getLog().warning("Could not parse Integer argument for message " + message);
 		}
@@ -120,8 +123,8 @@ public class MediaQueriesThread extends Thread{
 	}
 	
 	/**
-	 * 
-	 * @param message
+	 * Get the opcode or the argument from a message from the Android app
+	 * @param message message recevied from Android App
 	 * @param opCode if true -> find op code. if false -> find argument
 	 * @return null if it can't find what it's looking for
 	 */
@@ -226,6 +229,17 @@ public class MediaQueriesThread extends Thread{
 	}
 	
 	/**
+	 * start listening, hand off queries to new threads and resume listening 
+	 */
+	public void run() {
+		getLog().log(Level.INFO, "Starting MediaQueriesThread");
+		while (true) {//this never finishes because it always runs and waits for the app to send queries
+			AddressPortMessageTuple apmt = receiveQuery(getRecvSock());
+			parseQuery(apmt.message, codeLookup, apmt.addr, apmt.portNum);
+		}
+	}
+	
+	/**
 	 * Basically a struct.
 	 * Used to return three values from the method that received query packets,
 	 * and then pass the values to the query parser
@@ -238,27 +252,16 @@ public class MediaQueriesThread extends Thread{
 		private String message;
 	}
 	
-	/**
-	 * start listening, hand off queries to new threads and resume listening 
-	 */
-	public void run() {
-		getLog().log(Level.INFO, "Starting MediaQueriesThread");
-		while (true) {
-			AddressPortMessageTuple apmt = receiveQuery(getRecvSock());
-			parseQuery(apmt.message, codeLookup, apmt.addr, apmt.portNum);
-		}
-	}
-	
 	public static void main(String[] args) {
 		DatagramSocket sock = null;
 		try {
-			sock = new DatagramSocket(piPort);
+			sock = new DatagramSocket(PIPORT);
 		} catch (SocketException e) {
-			getLog().log(Level.SEVERE, "Could not open Datagram Socket on port " + piPort);
+			getLog().log(Level.SEVERE, "Could not open Datagram Socket on port " + PIPORT);
 		}
 		MediaQueriesThread mqt = new MediaQueriesThread(sock);
 		mqt.start();
-		sock.close();
+		if (sock != null) sock.close();
 	}
 
 }
