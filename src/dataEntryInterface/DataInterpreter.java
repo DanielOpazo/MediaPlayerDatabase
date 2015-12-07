@@ -52,6 +52,7 @@ public class DataInterpreter {
 			videoFileInfo.setTitle(readTitle(videoTitleKey));
 			videoFileInfo.setDate(readDate());
 			videoFileInfo.setCategory(readCategory());
+			fileInfo = videoFileInfo;
 		}
 	}
 	

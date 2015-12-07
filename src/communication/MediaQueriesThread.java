@@ -160,6 +160,7 @@ public class MediaQueriesThread extends Thread{
 		//switch/case handing off operations to other methods
 		//other methods will hand off to database lookups, then format the results
 		queryCode opCode = getOpCode(message, codeLookup);
+		getLog().log(Level.INFO, message);
 		
 		switch (opCode) {
 			case SONGS_FOR_ALBUM_QUERY:
@@ -228,7 +229,7 @@ public class MediaQueriesThread extends Thread{
 	/**
 	 * Basically a struct.
 	 * Used to return three values from the method that received query packets,
-	 * and then pass the values to the query parser
+	 *and then pass the values to the query parser
 	 * @author Daniel
 	 *
 	 */
@@ -245,6 +246,7 @@ public class MediaQueriesThread extends Thread{
 		getLog().log(Level.INFO, "Starting MediaQueryThread");
 		while (true) {
 			AddressPortMessageTuple apmt = receiveQuery(getRecvSock());
+			getLog().info("Received query: " + apmt.message);
 			parseQuery(apmt.message, codeLookup, apmt.addr, apmt.portNum);
 		}
 	}

@@ -29,22 +29,22 @@ public class CoreDataAccess {
 	
 	//SQL Queries
 	private final String doesSongExistQuery = "select count(*) from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id where s.title = ? and al.title = ? and ar.name = ?";
-	private final String getAlbumIdQuery = "select al.album_id from album as al inner join artist as ar on al.artist_id = ar.artist_id where al.title = ? and al.date = ? and ar.name = ?";
+	private final String getAlbumIdQuery = "select al.album_id from album as al inner join artist as ar on al.artist_id = ar.artist_id where al.title = ? and ar.name = ?";
 	private final String getArtistIdQuery = "select artist_id from artist where name = ?";
 	private final String getVideoIdQuery = "select video_id from video where title = ?";
-	private final String insertSongIntoAlbumQuery = "insert into song (title, album_id, track_number, file_path) values (?, ?, ?, ?)";
-	private final String insertAlbumIntoArtistQuery = "insert into album (date, album_cover_path, artist_id, title) values (?, ?, ?, ?)";
+	private final String insertSongIntoAlbumQuery = "insert into song (title, album_id, track_number, file_path) values (?, ?, ?, ?);";
+	private final String insertAlbumIntoArtistQuery = "insert into album (date, album_cover_path, artist_id, title) values (?, ?, ?, ?);";
 	private final String insertArtistQuery = "insert into artist (name) values (?)";
 	private final String insertVideoQuery = "insert into video (video_path, title, release_date, category, cover_picture_path) values (?, ?, ?, ?, ?)";
-	private final String getAllSongsQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id;";
-	private final String getAllSongsForAlbumQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id where al.album_id = ?;";
-	private final String getAllSongsForArtistQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id  inner join artist as ar on al.artist_id = ar.artist_id where ar.artist_id = ?;";
-	private final String getAllAlbumsQuery = "select al.title, al.date, al.album_id, ar.name from album as al inner join artist as ar on al.artist_id = ar.artist_id;";
-	private final String getAllAlbumsForArtistQuery = "select al.title, al.date, al.album_id, ar.name from album as al inner join artist as ar on al.artist_id = ar.artist_id where ar.artist_id = ?";
-	private final String getAllArtistsQuery = "select artist_id, name from artist;";
-	private final String getAllVideosQuery = "select title, category, release_date, video_id from video;";
-	private final String getAllVideosForCategoryQuery = "select title, category, release_date, video_id from video where category = ?;";
-	private final String getCategoriesQuery = "select distinct category from video;";
+	private final String getAllSongsQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id order by s.title;";
+	private final String getAllSongsForAlbumQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id inner join artist as ar on al.artist_id = ar.artist_id where al.album_id = ? order by s.title;";
+	private final String getAllSongsForArtistQuery = "select s.title, s.track_number, s.song_id, al.date, al.title, ar.name from song as s inner join album as al on s.album_id = al.album_id  inner join artist as ar on al.artist_id = ar.artist_id where ar.artist_id = ? order by s.title;";
+	private final String getAllAlbumsQuery = "select al.title, al.date, al.album_id, ar.name from album as al inner join artist as ar on al.artist_id = ar.artist_id order by al.title;";
+	private final String getAllAlbumsForArtistQuery = "select al.title, al.date, al.album_id, ar.name from album as al inner join artist as ar on al.artist_id = ar.artist_id where ar.artist_id = ? order by al.title;";
+	private final String getAllArtistsQuery = "select artist_id, name from artist order by name;";
+	private final String getAllVideosQuery = "select title, category, release_date, video_id from video order by title;";
+	private final String getAllVideosForCategoryQuery = "select title, category, release_date, video_id from video where category = ? order by title;";
+	private final String getCategoriesQuery = "select distinct category from video order by category;";
 	private final String getFilePathForSongQuery = "select file_path from song where song_id = ?";
 	
 	private static final Logger log = Logger.getLogger(CoreDataAccess.class.getName());
@@ -137,12 +137,7 @@ public class CoreDataAccess {
 			conn = getConnection();
 			ps = conn.prepareStatement(getAlbumIdQuery);
 			ps.setString(1, songInfo.getAlbum());
-			if (songInfo.getDate() != null){
-				ps.setDate(2, new Date(songInfo.getDate().getTime()));
-			}else {
-				ps.setDate(2, null);
-			}
-			ps.setString(3, songInfo.getArtist());
+			ps.setString(2, songInfo.getArtist());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				result = rs.getInt(1);
@@ -162,7 +157,7 @@ public class CoreDataAccess {
 	
 	
 	/**
-	 * An artist exists if there is an artist with the same name. Artist names are unique
+	 * An artist exists if there is an artist with the same name. Artist names are uniqueVikings.S01E05.Raid.1080p.WEB-DL.DD5.1.H.264-CtrlHD.mkv
 	 * @param songInfo
 	 * @return The primary key if the artist exists. 0 otherwise
 	 */

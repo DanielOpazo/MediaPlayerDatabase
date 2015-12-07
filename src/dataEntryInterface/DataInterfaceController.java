@@ -19,7 +19,7 @@ public class DataInterfaceController {
 	private static final Logger log = Logger.getLogger(DataInterfaceController.class.getName());
 	private final String metadataFileName = "Metadata.md";
 	private final String finishedFileName = "Finish.md";
-	private final String supportedMediaFileTypesGlob = "*.{mp3,mkv,mp4}";
+	private final String supportedMediaFileTypesGlob = "*.{mp3,wma,flac,m4v,mkv,avi,mp4,mov,mpg,flv}";
 	/*
 	 * Windows paths
 	 */
@@ -71,6 +71,7 @@ public class DataInterfaceController {
 				if (di.getFileInfo().getTitle() == null) {
 					reasons += "title is null ";
 				}
+				
 				if (di.getFileInfo().getFilePath() == null){
 					reasons += "filePath is null ";
 				}
@@ -102,8 +103,8 @@ public class DataInterfaceController {
 	private boolean checkIfValidFile() {
 		boolean valid = false;
 		try {
-			new FileReader(landingDirectoryFullPath + metadataFileName).close();;
-			new FileReader(landingDirectoryFullPath + finishedFileName).close();;
+			new FileReader(landingDirectoryFullPath + metadataFileName).close();
+			new FileReader(landingDirectoryFullPath + finishedFileName).close();
 			valid = true;
 		} catch (FileNotFoundException e) {
 			//Don't log the exception because most of the time when this is called, there will be no file
@@ -120,6 +121,7 @@ public class DataInterfaceController {
 
 	public static void main(String[] args) {
 		DataInterfaceController dc = new DataInterfaceController();
+		DataInterfaceController.getLog().log(Level.INFO, "Starting DataInterfaceController");
 		while (true) {
 			dc.readFileAndWriteToDatabase();
 			try {
